@@ -52,6 +52,10 @@ jobs:
           echo "Ref: ${{ github.ref }}"
           echo "Ref Name: ${{ github.ref_name }}"
 
+          # Get version from package.json
+          N8N_VERSION=$(node -p "require('./package.json').version")
+          echo "N8N_VERSION=$N8N_VERSION"
+
           # Get commit SHA for versioning
           COMMIT_SHA="${{ github.sha }}"
           SHORT_SHA=$(echo "$COMMIT_SHA" | cut -c1-7)
@@ -62,13 +66,13 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             # Manual builds from dev branch
             echo "release_type=dev" >> $GITHUB_OUTPUT
-            echo "n8n_version=dev-manual-${BUILD_DATE}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "n8n_version=${N8N_VERSION}-manual-${BUILD_DATE}-${SHORT_SHA}" >> $GITHUB_OUTPUT
             echo "push_enabled=${{ inputs.push_enabled }}" >> $GITHUB_OUTPUT
 
           elif [[ "${{ github.event_name }}" == "push" ]]; then
             # Automatic builds on dev branch push
             echo "release_type=dev" >> $GITHUB_OUTPUT
-            echo "n8n_version=dev-${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "n8n_version=${N8N_VERSION}-${SHORT_SHA}" >> $GITHUB_OUTPUT
             echo "push_enabled=true" >> $GITHUB_OUTPUT
           fi
 
@@ -132,10 +136,13 @@ jobs:
 
           DOCKER_TAGS_FOR_PUSH=""
 
+          # Extract version from N8N_VERSION_TAG (remove commit SHA part)
+          VERSION_ONLY=$(echo "$N8N_VERSION_TAG" | sed 's/-[a-f0-9]\{7\}$//' | sed 's/-manual-[0-9]\{8\}-[a-f0-9]\{7\}$//')
+
           # Determine tags based on release type
           case "$RELEASE_TYPE" in
             "dev")
-              DOCKER_TAGS_FOR_PUSH="${DOCKER_BASE}:dev-${PLATFORM}"
+              DOCKER_TAGS_FOR_PUSH="${DOCKER_BASE}:${VERSION_ONLY}-${PLATFORM}"
               ;;
             *)
               echo "Error: Unknown release type: $RELEASE_TYPE"
@@ -190,12 +197,16 @@ jobs:
         id: dockerhub_check
         run: |
           RELEASE_TYPE="${{ needs.determine-build-context.outputs.release_type }}"
+          N8N_VERSION_TAG="${{ needs.determine-build-context.outputs.n8n_version }}"
           DOCKER_BASE="${{ secrets.DOCKER_USERNAME }}/n8n"
+
+          # Extract version from N8N_VERSION_TAG (remove commit SHA part)
+          VERSION_ONLY=$(echo "$N8N_VERSION_TAG" | sed 's/-[a-f0-9]\{7\}$//' | sed 's/-manual-[0-9]\{8\}-[a-f0-9]\{7\}$//')
 
           # Determine if Docker Hub manifest is needed and construct the tag
           case "$RELEASE_TYPE" in
             "dev")
-              echo "DOCKER_MANIFEST_TAG=${DOCKER_BASE}:dev" >> $GITHUB_OUTPUT
+              echo "DOCKER_MANIFEST_TAG=${DOCKER_BASE}:${VERSION_ONLY}" >> $GITHUB_OUTPUT
               echo "CREATE_DOCKERHUB_MANIFEST=true" >> $GITHUB_OUTPUT
               ;;
             *)
