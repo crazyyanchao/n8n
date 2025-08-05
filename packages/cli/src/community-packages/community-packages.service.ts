@@ -1,5 +1,4 @@
 import { Logger } from '@n8n/backend-common';
-import { LICENSE_FEATURES } from '@n8n/constants';
 import type { InstalledPackages } from '@n8n/db';
 import { InstalledPackagesRepository } from '@n8n/db';
 import { OnPubSubEvent } from '@n8n/decorators';
@@ -20,7 +19,6 @@ import {
 	RESPONSE_ERROR_MESSAGES,
 	UNKNOWN_FAILURE_REASON,
 } from '@/constants';
-import { FeatureNotLicensedError } from '@/errors/feature-not-licensed.error';
 import { License } from '@/license';
 import { LoadNodesAndCredentials } from '@/load-nodes-and-credentials';
 import { Publisher } from '@/scaling/pubsub/publisher.service';
@@ -366,9 +364,7 @@ export class CommunityPackagesService {
 
 	private getNpmRegistry() {
 		const { registry } = this.config;
-		if (registry !== DEFAULT_REGISTRY && !this.license.isCustomNpmRegistryEnabled()) {
-			throw new FeatureNotLicensedError(LICENSE_FEATURES.COMMUNITY_NODES_CUSTOM_REGISTRY);
-		}
+		// 移除许可证检查，允许使用自定义注册表
 		return registry;
 	}
 

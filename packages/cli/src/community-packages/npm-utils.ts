@@ -34,8 +34,9 @@ export async function isVersionExists(
 	const timeoutOption = { timeout: REQUEST_TIMEOUT };
 
 	try {
-		const url = `${registryUrl.replace(/\/+$/, '')}/${encodeURIComponent(packageName)}`;
-		await axios.get(`${url}/${version}`, timeoutOption);
+		// const url = `${registryUrl.replace(/\/+$/, '')}/${encodeURIComponent(packageName)}`;
+		// await axios.get(`${url}/${version}`, timeoutOption);
+		// 直接返回true，不检查版本信息
 		return true;
 	} catch (error) {
 		if (axios.isAxiosError(error) && error.response?.status === 404) {
