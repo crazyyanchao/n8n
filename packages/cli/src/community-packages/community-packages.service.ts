@@ -65,8 +65,6 @@ type PackageJson = {
 
 @Service()
 export class CommunityPackagesService {
-	reinstallMissingPackages = false;
-
 	missingPackages: string[] = [];
 
 	private readonly downloadFolder = this.instanceSettings.nodesDownloadDir;
